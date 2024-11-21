@@ -30,7 +30,7 @@ exports.viewConsumerInfo = (req, res) => {
         <p>ID: ${consumer.Cid}</p>
         <p>위치: ${consumer.Clocation}</p>
         <p>연락처: ${consumer.Ccontact}</p>
-        <button onclick="window.location.href='/consumer-dashboard?Cid=${Cid}'">뒤로 가기</button>
+        <button onclick="window.location.href='/consumer-dashboard?Cid=${Cid}'">돌아가기</button>
       `);
     } else {
       res.send('해당 손님의 정보를 찾을 수 없습니다.');
@@ -103,11 +103,11 @@ exports.viewOwnerInfo = (req, res) => {
     if (results.length > 0) {
       const owner = results[0];
       res.send(`
-        <h2>${owner.Oname} 사장님의 정보</h2>
+        <h2>${owner.Oname} 사장님의 개인 정보</h2>
         <p>ID: ${owner.Oid}</p>
         <p>위치: ${owner.Olocation}</p>
         <p>연락처: ${owner.Ocontact}</p>
-        <button onclick="window.location.href='/owner-dashboard?Oid=${Oid}'">뒤로 가기</button>
+        <button onclick="window.location.href='/owner-dashboard?Oid=${Oid}'">돌아가기</button>
       `);
     } else {
       res.send('해당 사장님의 정보를 찾을 수 없습니다.');
@@ -143,6 +143,7 @@ exports.viewOwnerMenu = (req, res) => {
           <p>메뉴 가격: ${menu.Mprice}원</p>
           <button onclick="window.location.href='/edit-menu?Mid=${menu.Mid}'">수정</button>
           <button onclick="window.location.href='/delete-menu?Mid=${menu.Mid}'">삭제</button>
+          <button onclick="window.location.href='/owner-dashboard?Oid=${Oid}'">돌아가기</button>
           <hr>
         `;
       });
