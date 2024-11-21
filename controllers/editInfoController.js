@@ -24,6 +24,7 @@ exports.editConsumerInfo = (req, res) => {
       res.send(`
         <h2>${consumer.Cname} 손님의 개인정보 수정</h2>
         <form action="/update-consumer?Cid=${Cid}" method="POST">
+        <input type="hidden" id="Cid" name="Cid" value="${consumer.Cid}">
           <label for="Cname">이름:</label>
           <input type="text" id="Cname" name="Cname" value="${consumer.Cname}" required><br>
 
@@ -117,6 +118,7 @@ exports.editOwnerInfo = (req, res) => {
       res.send(`
         <h2>${owner.Oname} 사장님 정보 수정</h2>
         <form action="/update-owner?Oid=${Oid}" method="POST">
+        <input type="hidden" id="Oid" name="Oid" value="${owner.Oid}">
           <label for="Oname">이름:</label>
           <input type="text" id="Oname" name="Oname" value="${owner.Oname}" required><br>
 
@@ -141,33 +143,43 @@ exports.editOwnerInfo = (req, res) => {
 
 // 손님 정보 업데이트 처리
 exports.updateConsumerInfo = (req, res) => {
-  const Cid = req.query.Cid;
+  const Cid = req.body.Cid;
   const { Cname, Clocation, Ccontact, Cpw } = req.body;
+
+  // 입력값 검증
+  if (!Cid) {
+    res.send('에러: 손님 ID가 전달되지 않았습니다.');
+    return;
+  }
+  if (Cname.length > 10) {
+    res.send('에러: 이름은 최대 10자까지 입력할 수 있습니다.');
+    return;
+  }
+  if (Clocation.length > 20) {
+    res.send('에러: 위치는 최대 20자까지 입력할 수 있습니다.');
+    return;
+  }
+  if (!/^\d{4}$/.test(Cpw)) {
+    res.send('에러: 비밀번호는 4자리 숫자로 입력해야 합니다.');
+    return;
+  }
+
   const query = 'UPDATE consumer SET Cname = ?, Clocation = ?, Ccontact = ?, Cpw = ? WHERE Cid = ?';
+  console.log('Cid:', Cid);
+  console.log('Query:', query);
 
   connection.query(query, [Cname, Clocation, Ccontact, Cpw, Cid], (err, results) => {
     if (err) {
-      // SQL 에러 처리
-      if (err.errno === 1045) {
-        res.send('에러: 데이터베이스 접근 권한이 없습니다.');
-      } else if (err.errno === 1146) {
-        res.send('에러: 손님 정보를 저장하는 테이블이 존재하지 않습니다.');
-      } else if (err.errno === 1054) {
-        res.send('에러: 데이터베이스 컬럼 정보가 잘못되었습니다.');
-      } else if (err.errno === 1062) {
-        res.send('에러: 중복된 데이터가 존재합니다. 다시 확인해주세요.');
-      } else {
-        console.error('손님 정보 수정 중 알 수 없는 오류 발생:', err);
-        res.send('알 수 없는 오류로 인해 손님 정보 수정에 실패했습니다.');
-      }
+      console.error('손님 정보 수정 중 오류 발생:', err);
+      res.send('손님 정보 수정 중 오류가 발생했습니다.');
       return;
     }
 
-    // 업데이트 성공 처리
+    console.log('Affected Rows:', results.affectedRows);
+
     if (results.affectedRows > 0) {
       res.send(`${Cname} 손님의 정보가 성공적으로 수정되었습니다.`);
     } else {
-      // 업데이트할 데이터가 없을 경우
       res.send('수정할 데이터가 없습니다. 손님 ID를 확인해주세요.');
     }
   });
@@ -177,35 +189,47 @@ exports.updateConsumerInfo = (req, res) => {
 exports.updateOwnerInfo = (req, res) => {
   const Oid = req.body.Oid; // POST 요청에서 사장님 ID 가져오기
   const { Oname, Olocation, Ocontact, Opw } = req.body; // POST 요청에서 새로운 정보 가져오기
-  const query = 'UPDATE owner SET Oname = ?, Olocation = ?, Ocontact = ?, Opw = ? WHERE Oid = ?'; // 업데이트 쿼리
-
-  connection.query(query, [Oname, Olocation, Ocontact, Opw, Oid], (err, results) => {
-    if (err) {
-      // SQL 에러 처리
-      if (err.errno === 1045) {
-        res.send('에러: 데이터베이스 접근 권한이 없습니다.');
-      } else if (err.errno === 1146) {
-        res.send('에러: 사장님 정보를 저장하는 테이블이 존재하지 않습니다.');
-      } else if (err.errno === 1054) {
-        res.send('에러: 데이터베이스 컬럼 정보가 잘못되었습니다.');
-      } else if (err.errno === 1062) {
-        res.send('에러: 중복된 데이터가 존재합니다. 다시 확인해주세요.');
-      } else {
-        console.error('사장님 정보 수정 중 알 수 없는 오류 발생:', err);
-        res.send('알 수 없는 오류로 인해 사장님 정보 수정에 실패했습니다.');
-      }
+  // 입력값 검증
+    if (Oname.length > 10) {
+      res.send('에러: 이름은 최대 10자까지 입력할 수 있습니다.');
       return;
     }
-
-    // 업데이트 성공 처리
-    if (results.affectedRows > 0) {
-      res.send(`${Oname} 사장님의 정보가 성공적으로 수정되었습니다.`);
-    } else {
-      // 업데이트할 데이터가 없는 경우
-      res.send('수정할 데이터가 없습니다. 사장님 ID를 확인해주세요.');
+    if (Olocation.length > 20) {
+      res.send('에러: 위치는 최대 20자까지 입력할 수 있습니다.');
+      return;
     }
-  });
-};
+    if (!/^\d{4}$/.test(Opw)) {
+      res.send('에러: 비밀번호는 4자리 숫자로 입력해야 합니다.');
+      return;
+    }
+      const query = 'UPDATE owner SET Oname = ?, Olocation = ?, Ocontact = ?, Opw = ? WHERE Oid = ?';
+
+      connection.query(query, [Oname, Olocation, Ocontact, Opw, Oid], (err, results) => {
+        if (err) {
+          // SQL 에러 처리
+          if (err.errno === 1045) {
+            res.send('에러: 데이터베이스 접근 권한이 없습니다.');
+          } else if (err.errno === 1146) {
+            res.send('에러: 사장님 정보를 저장하는 테이블이 존재하지 않습니다.');
+          } else if (err.errno === 1054) {
+            res.send('에러: 데이터베이스 컬럼 정보가 잘못되었습니다.');
+          } else if (err.errno === 1062) {
+            res.send('에러: 중복된 데이터가 존재합니다. 다시 확인해주세요.');
+          } else {
+            res.send('사장님 정보 수정에 실패했습니다.');
+          }
+          return;
+        }
+
+        // 업데이트 성공 처리
+        if (results.affectedRows > 0) {
+          res.send(`${Oname} 사장님의 정보가 성공적으로 수정되었습니다.`);
+        } else {
+          // 업데이트할 데이터가 없는 경우
+          res.send('수정할 데이터가 없습니다. 사장님 ID를 확인해주세요.');
+        }
+      });
+    };
 
 // 메뉴 수정 페이지(사장님만 가능)
 exports.editMenu = (req, res) => {
@@ -278,49 +302,65 @@ exports.updateMenu = (req, res) => {
 
 // 손님 정보 삭제 처리
 exports.deleteConsumerInfo = (req, res) => {
-  const Cid = req.query.Cid;
-  const query = 'DELETE FROM consumer WHERE Cid = ?';
+  const Cid = req.query.Cid; // 손님 ID를 쿼리 파라미터로 받음
 
-  connection.query(query, [Cid], (err, results) => {
+  const deleteOrdersQuery = 'DELETE FROM orders WHERE Cid = ?';
+  const deleteConsumerQuery = 'DELETE FROM consumer WHERE Cid = ?';
+
+  // 먼저 orders 테이블의 데이터를 삭제
+  connection.query(deleteOrdersQuery, [Cid], (err, results) => {
     if (err) {
-      if (err.errno === 1451) {
-        res.send('에러: 이 손님과 연관된 데이터가 있어 삭제할 수 없습니다.');
-      } else {
-        console.error('손님 정보 삭제 중 오류 발생:', err);
-        res.send('손님 정보 삭제에 실패했습니다.');
-      }
+      console.error('주문 내역 삭제 중 오류 발생:', err);
+      res.send('주문 내역 삭제 중 오류가 발생했습니다.');
       return;
     }
 
-    if (results.affectedRows > 0) {
-      res.send('손님 정보가 성공적으로 삭제되었습니다.');
-    } else {
-      res.send('삭제할 데이터가 없습니다. 손님 ID를 확인해주세요.');
-    }
+    // 그 후 consumer 테이블의 데이터를 삭제
+    connection.query(deleteConsumerQuery, [Cid], (err, results) => {
+      if (err) {
+        console.error('손님 정보 삭제 중 오류 발생:', err);
+        res.send('손님 정보 삭제 중 오류가 발생했습니다.');
+        return;
+      }
+
+      if (results.affectedRows > 0) {
+        res.send('손님의 개인 정보와 주문 내역이 성공적으로 삭제되었습니다.');
+      } else {
+        res.send('삭제할 데이터가 없습니다. 손님 ID를 확인해주세요.');
+      }
+    });
   });
 };
 
 // 사장님 정보 삭제 처리 (메뉴와 주문 내역 유지)
 exports.deleteOwnerInfo = (req, res) => {
-  const Oid = req.query.Oid;
+  const Oid = req.query.Oid; // 사장님 ID를 쿼리 파라미터로 받음
+
+  const deleteMenuQuery = 'DELETE FROM menu WHERE Oid = ?';
   const deleteOwnerQuery = 'DELETE FROM owner WHERE Oid = ?';
 
-  connection.query(deleteOwnerQuery, [Oid], (err, results) => {
+  // 메뉴 삭제
+  connection.query(deleteMenuQuery, [Oid], (err, results) => {
     if (err) {
-      if (err.errno === 1451) {
-        res.send('에러: 이 사장님과 연관된 데이터가 있어 삭제할 수 없습니다.');
-      } else {
-        console.error('사장님 정보 삭제 중 오류 발생:', err);
-        res.send('사장님 정보 삭제에 실패했습니다.');
-      }
+      console.error('메뉴 삭제 중 오류 발생:', err);
+      res.send('메뉴 삭제 중 오류가 발생했습니다.');
       return;
     }
 
-    if (results.affectedRows > 0) {
-      res.send('사장님 정보가 성공적으로 삭제되었습니다.');
-    } else {
-      res.send('삭제할 데이터가 없습니다. 사장님 ID를 확인해주세요.');
-    }
+    // 사장님 정보 삭제
+    connection.query(deleteOwnerQuery, [Oid], (err, results) => {
+      if (err) {
+        console.error('사장님 정보 삭제 중 오류 발생:', err);
+        res.send('사장님 정보 삭제 중 오류가 발생했습니다.');
+        return;
+      }
+
+      if (results.affectedRows > 0) {
+        res.send('사장님의 개인 정보와 관련 메뉴가 성공적으로 삭제되었습니다.');
+      } else {
+        res.send('삭제할 데이터가 없습니다. 사장님 ID를 확인해주세요.');
+      }
+    });
   });
 };
 

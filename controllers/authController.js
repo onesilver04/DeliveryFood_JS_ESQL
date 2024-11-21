@@ -27,7 +27,24 @@ exports.registerConsumer = (req, res) => {
 };
 // 손님 회원가입 로직
 exports.submitConsumer = (req, res) => {
-  const { Cid, Cname, Clocation, Ccontact, Cpw } = req.body; // 요청에서 데이터 추출
+  const { Cid, Cname, Clocation, Ccontact, Cpw } = req.body;
+  // 입력값 조건 검증
+  if (!/^\d{4}$/.test(Cid)) {
+      res.send('에러: ID는 4자리 숫자로 입력해야 합니다.');
+      return;
+    }
+    if (!/^\d{4}$/.test(Cpw)) {
+      res.send('에러: 비밀번호는 4자리 숫자로 입력해야 합니다.');
+      return;
+    }
+    if (Cname.length > 10) {
+      res.send('에러: 이름은 최대 10자까지 입력할 수 있습니다.');
+      return;
+    }
+    if (Clocation.length > 20) {
+      res.send('에러: 위치는 최대 20자까지 입력할 수 있습니다.');
+      return;
+    }
 
   const query = 'INSERT INTO consumer (Cid, Cname, Clocation, Ccontact, Cpw) VALUES (?, ?, ?, ?, ?)';
   connection.query(query, [Cid, Cname, Clocation, Ccontact, Cpw], (err, results) => {
@@ -76,7 +93,24 @@ exports.registerOwner = (req, res) => {
 };
 // 사장님 회원가입 로직
 exports.submitOwner = (req, res) => {
-  const { Oid, Oname, Olocation, Ocontact, Opw } = req.body; // 요청에서 데이터 추출
+  const { Oid, Oname, Olocation, Ocontact, Opw } = req.body;
+  // 입력값 조건 검증
+  if (!/^\d{4}$/.test(Oid)) {
+      res.send('에러: ID는 4자리 숫자로 입력해야 합니다.');
+      return;
+    }
+    if (!/^\d{4}$/.test(Opw)) {
+      res.send('에러: 비밀번호는 4자리 숫자로 입력해야 합니다.');
+      return;
+    }
+    if (Oname.length > 10) {
+      res.send('에러: 이름은 최대 10자까지 입력할 수 있습니다.');
+      return;
+    }
+    if (Olocation.length > 20) {
+      res.send('에러: 위치는 최대 20자까지 입력할 수 있습니다.');
+      return;
+    }
 
   const query = 'INSERT INTO owner (Oid, Oname, Olocation, Ocontact, Opw) VALUES (?, ?, ?, ?, ?)';
   connection.query(query, [Oid, Oname, Olocation, Ocontact, Opw], (err, results) => {
@@ -117,36 +151,46 @@ exports.showConsumerLoginForm = (req, res) => {
 // 손님 로그인 로직
 exports.loginConsumer = (req, res) => {
   const { Cid, Cpw } = req.body;
-  const query = 'SELECT * FROM consumer WHERE Cid = ? AND Cpw = ?';
-  connection.query(query, [Cid, Cpw], (err, results) => {
-    if (err) { // SQL 관련 에러 처리
-      if (err.errno === 1045) { // 1045: Access denied (권한 문제)
-        res.send('에러: 데이터베이스 접근 권한이 없습니다. 관리자에게 문의하세요.');
-      } else if (err.errno === 1146) { // 1146: Table does not exist (테이블 없음)
-        res.send('에러: 로그인 테이블이 존재하지 않습니다. 관리자에게 문의하세요.');
-      } else {
-        console.error('손님 로그인 중 알 수 없는 오류 발생:', err);
-        res.send('알 수 없는 오류로 인해 로그인에 실패했습니다.');
-      }
+  // 입력값 조건 검증
+  if (!/^\d{4}$/.test(Cid)) {
+      res.send('에러: ID는 4자리 숫자로 입력해야 합니다.');
       return;
     }
-    // 로그인 성공 여부 확인
-    if (results.length > 0) {
-      res.redirect(`/consumer-dashboard?Cid=${Cid}`);
-    } else {
-      res.send('로그인 정보가 일치하지 않습니다.'); // 정보 불일치
+    if (!/^\d{4}$/.test(Cpw)) {
+      res.send('에러: 비밀번호는 4자리 숫자로 입력해야 합니다.');
+      return;
     }
-  });
-};
+
+    const query = 'SELECT * FROM consumer WHERE Cid = ?';
+    connection.query(query, [Cid], (err, results) => {
+      if (err) {
+        console.error('손님 로그인 중 알 수 없는 오류 발생:', err);
+        res.send('알 수 없는 오류로 인해 로그인에 실패했습니다.');
+        return;
+      }
+
+      if (results.length === 0) {
+        res.send('에러: 존재하지 않는 ID입니다.');
+        return;
+      }
+
+      const consumer = results[0];
+      if (String(consumer.Cpw) !== String(Cpw)) {
+            res.send('에러: 비밀번호가 일치하지 않습니다.');
+            return;
+      }
+      res.redirect(`/consumer-dashboard?Cid=${Cid}`);
+    });
+  };
 // 대시보드 페이지 (로그인 후 새로운 버튼 페이지)
 exports.consumerDashboard = (req, res) => {
   const Cid = req.query.Cid;
   res.send(`
     <h2>ID: ${Cid} 손님, 로그인에 성공하셨습니다! 환영합니다~!</h2>
-    <button onclick="window.location.href='/view-consumer?Cid=${Cid}'">1. 정보 조회</button>
+    <button onclick="window.location.href='/view-consumer?Cid=${Cid}'">1. 개인 정보 조회</button>
     <button onclick="window.location.href='/view-orders?Cid=${Cid}'">2. 주문 내역 조회</button>
-    <button onclick="window.location.href='/delete-consumer?Cid=${Cid}'">3. 정보 삭제</button>
-    <button onclick="window.location.href='/edit-consumer?Cid=${Cid}'">4. 정보 수정</button>
+    <button onclick="window.location.href='/delete-consumer?Cid=${Cid}'">3. 개인 정보 삭제</button>
+    <button onclick="window.location.href='/edit-consumer?Cid=${Cid}'">4. 개인 정보 수정</button>
     <button onclick="window.location.href='/place-order?Cid=${Cid}'">5. 음식 주문하기</button>
     <button onclick="window.location.href='/'">6. 로그아웃</button>
   `);
@@ -167,33 +211,39 @@ exports.showOwnerLoginForm = (req, res) => {
     </form>
   `);
 };
-
 // 사장님 로그인 로직
 exports.loginOwner = (req, res) => {
   const { Oid, Opw } = req.body;
-  const query = 'SELECT * FROM owner WHERE Oid = ? AND Opw = ?';
 
-  connection.query(query, [Oid, Opw], (err, results) => {
+  // 입력값 검증
+  if (!/^\d{4}$/.test(Oid)) {
+    res.send('에러: ID는 4자리 숫자로 입력해야 합니다.');
+    return;
+  }
+  if (!/^\d{4}$/.test(Opw)) {
+    res.send('에러: 비밀번호는 4자리 숫자로 입력해야 합니다.');
+    return;
+  }
+
+  const query = 'SELECT * FROM owner WHERE Oid = ?';
+  connection.query(query, [Oid], (err, results) => {
     if (err) {
-      // SQL 관련 에러 처리
-      if (err.errno === 1045) {
-        // 1045: Access denied (권한 문제)
-        res.send('에러: 데이터베이스 접근 권한이 없습니다. 관리자에게 문의하세요.');
-      } else if (err.errno === 1146) { // 1146: Table does not exist (테이블 없음)
-        res.send('에러: 로그인 테이블이 존재하지 않습니다. 관리자에게 문의하세요.');
-      } else if (err.errno === 1054) { // 1054: Unknown column (컬럼 오류)
-        res.send('에러: 데이터베이스 컬럼 정보가 잘못되었습니다. 관리자에게 문의하세요.');
-      } else {
-        console.error('사장님 로그인 중 알 수 없는 오류 발생:', err);
-        res.send('알 수 없는 오류로 인해 로그인에 실패했습니다.');
-      }
+      console.error('사장님 로그인 중 알 수 없는 오류 발생:', err);
+      res.send('알 수 없는 오류로 인해 로그인에 실패했습니다.');
       return;
     }
-    if (results.length > 0) {
-      res.redirect(`/owner-dashboard?Oid=${Oid}`);
-    } else {
-      res.send('로그인 정보가 일치하지 않습니다.');
+
+    if (results.length === 0) {
+      res.send('에러: 존재하지 않는 ID입니다.');
+      return;
     }
+
+    const owner = results[0];
+    if (String(owner.Opw) !== String(Opw)) {
+      res.send('에러: 비밀번호가 일치하지 않습니다.');
+      return;
+    }
+    res.redirect(`/owner-dashboard?Oid=${Oid}`);
   });
 };
 // 사장님 로그인 후 대시보드 페이지 (로그인 후 새로운 버튼 페이지)
