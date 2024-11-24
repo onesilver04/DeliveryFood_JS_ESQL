@@ -278,7 +278,7 @@ exports.showAddMenuForm = (req, res) => {
 };
 // 메뉴 추가 로직
 exports.addMenu = (req, res) => {
-  const Oid = req.query.Oid; // 사장님의 ID
+  const Oid = req.query.Oid;
   const { Mname, Mprice } = req.body;
   const query = 'INSERT INTO menu (Mname, Mprice, Oid) VALUES (?, ?, ?)';
 

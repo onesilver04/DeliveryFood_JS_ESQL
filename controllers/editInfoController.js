@@ -48,10 +48,9 @@ exports.editConsumerInfo = (req, res) => {
 
 // 손님 정보 및 주문 내역 삭제 메서드
 exports.deleteConsumerInfo = (req, res) => {
-  const Cid = req.query.Cid; // 손님 ID를 쿼리 파라미터로 받음
+  const Cid = req.query.Cid;
   const deleteOrdersQuery = 'DELETE FROM orders WHERE Cid = ?';
   const deleteConsumerQuery = 'DELETE FROM consumer WHERE Cid = ?';
-
   // 손님 주문 내역 삭제
   connection.query(deleteOrdersQuery, [Cid], (err, results) => {
     if (err) {
@@ -165,9 +164,6 @@ exports.updateConsumerInfo = (req, res) => {
   }
 
   const query = 'UPDATE consumer SET Cname = ?, Clocation = ?, Ccontact = ?, Cpw = ? WHERE Cid = ?';
-  console.log('Cid:', Cid);
-  console.log('Query:', query);
-
   connection.query(query, [Cname, Clocation, Ccontact, Cpw, Cid], (err, results) => {
     if (err) {
       console.error('손님 정보 수정 중 오류 발생:', err);
@@ -187,8 +183,8 @@ exports.updateConsumerInfo = (req, res) => {
 
 // 사장님 정보 업데이트 처리
 exports.updateOwnerInfo = (req, res) => {
-  const Oid = req.body.Oid; // POST 요청에서 사장님 ID 가져오기
-  const { Oname, Olocation, Ocontact, Opw } = req.body; // POST 요청에서 새로운 정보 가져오기
+  const Oid = req.body.Oid;
+  const { Oname, Olocation, Ocontact, Opw } = req.body;
   // 입력값 검증
     if (Oname.length > 10) {
       res.send('에러: 이름은 최대 10자까지 입력할 수 있습니다.');
@@ -300,42 +296,9 @@ exports.updateMenu = (req, res) => {
   });
 };
 
-// 손님 정보 삭제 처리
-exports.deleteConsumerInfo = (req, res) => {
-  const Cid = req.query.Cid; // 손님 ID를 쿼리 파라미터로 받음
-
-  const deleteOrdersQuery = 'DELETE FROM orders WHERE Cid = ?';
-  const deleteConsumerQuery = 'DELETE FROM consumer WHERE Cid = ?';
-
-  // 먼저 orders 테이블의 데이터를 삭제
-  connection.query(deleteOrdersQuery, [Cid], (err, results) => {
-    if (err) {
-      console.error('주문 내역 삭제 중 오류 발생:', err);
-      res.send('주문 내역 삭제 중 오류가 발생했습니다.');
-      return;
-    }
-
-    // 그 후 consumer 테이블의 데이터를 삭제
-    connection.query(deleteConsumerQuery, [Cid], (err, results) => {
-      if (err) {
-        console.error('손님 정보 삭제 중 오류 발생:', err);
-        res.send('손님 정보 삭제 중 오류가 발생했습니다.');
-        return;
-      }
-
-      if (results.affectedRows > 0) {
-        res.send('손님의 개인 정보와 주문 내역이 성공적으로 삭제되었습니다.');
-      } else {
-        res.send('삭제할 데이터가 없습니다. 손님 ID를 확인해주세요.');
-      }
-    });
-  });
-};
-
 // 사장님 정보 삭제 처리 (메뉴와 주문 내역 유지)
 exports.deleteOwnerInfo = (req, res) => {
-  const Oid = req.query.Oid; // 사장님 ID를 쿼리 파라미터로 받음
-
+  const Oid = req.query.Oid;
   const deleteMenuQuery = 'DELETE FROM menu WHERE Oid = ?';
   const deleteOwnerQuery = 'DELETE FROM owner WHERE Oid = ?';
 

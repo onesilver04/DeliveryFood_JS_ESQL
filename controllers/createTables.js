@@ -56,7 +56,7 @@ const createTables = () => {
     }
   ];
 
-  // 테이블 생성 프로세스
+  // 테이블 존재 확인
   tables.forEach(({ name, query }) => {
     connection.query(`SHOW TABLES LIKE '${name}'`, (err, results) => {
       if (err) {
