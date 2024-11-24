@@ -42,11 +42,22 @@ exports.viewConsumerInfo = (req, res) => {
 exports.viewConsumerOrders = (req, res) => {
   const Cid = req.query.Cid;
   const query = `
-    SELECT orders.Rid, menu.Mname, menu.Mprice, orders.quantity, orders.order_date
-    FROM orders
+    SELECT
+      consumer.Cname AS 손님이름,
+      consumer.Clocation AS 손님위치,
+      menu.Mname AS 메뉴이름,
+      menu.Mprice AS 가격,
+      orders.quantity AS 주문수량,
+      owner.Olocation AS 가게위치,
+      orders.order_date AS 주문날짜,
+      (menu.Mprice * orders.quantity) AS 총가격
+    FROM consumer
+    JOIN orders ON consumer.Cid = orders.Cid
     JOIN menu ON orders.Mid = menu.Mid
-    WHERE orders.Cid = ?
+    JOIN owner ON menu.Oid = owner.Oid
+    WHERE consumer.Cid = ?
   `;
+
   connection.query(query, [Cid], (err, results) => {
     if (err) {
       // SQL 오류 번호에 따른 에러 처리
@@ -67,14 +78,18 @@ exports.viewConsumerOrders = (req, res) => {
     }
 
     if (results.length > 0) {
-      let orderList = `<h2>${Cid} 손님의 주문 내역입니다:</h2>`;
+      let orderList = `<h2>${results[0].손님이름} 손님의 주문 내역입니다:</h2>`;
       results.forEach(order => {
         orderList += `
-          주문 ID: ${order.Rid}<br>
-          메뉴: ${order.Mname}<br>
-          가격: ${order.Mprice}원<br>
-          수량: ${order.quantity}<br>
-          주문 날짜: ${order.order_date}<br>
+          <p>
+          <strong>손님 위치:</strong> ${order.손님위치}<br>
+          <strong>메뉴 이름:</strong> ${order.메뉴이름}<br>
+          <strong>개당 가격:</strong> ${order.가격}원<br>
+          <strong>주문 수량:</strong> ${order.주문수량}<br>
+          <strong>가게 위치:</strong> ${order.가게위치}<br>
+          <strong>주문 날짜:</strong> ${order.주문날짜}<br>
+          <strong>총 결제 금액:</strong> ${order.총가격}원<br>
+          </p>
           <hr>
         `;
       });
@@ -172,6 +187,7 @@ exports.showPlaceOrderForm = (req, res) => {
       }
       return;
     }
+    // 음식 주문 페이지
     let menuList = `<h2>음식 주문하기</h2><form action="/place-order?Cid=${Cid}" method="POST">`;
     results.forEach((menu) => {
       menuList += `
